@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SightAI — Умная Камера (v2.7)</title>
+    <title>SightAI — Умная Камера (v2.8)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -84,7 +84,7 @@
 
     <div class="liquid-bg"></div>
 
-    <!-- Шапка (уменьшенный логотип и отступы) -->
+    <!-- Шапка -->
     <header class="w-full flex justify-between items-center py-1.5 z-10">
         <div class="flex items-center gap-2">
             <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-base shadow-lg border border-white/20">
@@ -93,7 +93,7 @@
             <span class="font-extrabold text-xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300">SightAI</span>
         </div>
         <div class="flex items-center gap-1.5">
-            <span class="text-[11px] font-bold text-blue-400 bg-blue-500/10 border border-blue-400/30 px-2 py-0.5 rounded-full">v2.7</span>
+            <span class="text-[11px] font-bold text-blue-400 bg-blue-500/10 border border-blue-400/30 px-2 py-0.5 rounded-full">v2.8</span>
             <button onclick="openHistory()" class="liquid-glass-btn px-3 py-2 rounded-xl text-sm font-semibold text-blue-300 flex items-center gap-1">
                 <i class="fa-solid fa-clock-rotate-left"></i> История
             </button>
@@ -106,7 +106,7 @@
         </div>
     </header>
 
-    <!-- Видеоискатель (оптимизированная высота для баланса экрана) -->
+    <!-- Видеоискатель -->
     <main class="w-full relative my-1 flex flex-col justify-center items-center">
         <div class="w-full h-[390px] rounded-3xl overflow-hidden relative liquid-glass shadow-2xl flex items-center justify-center">
             <video id="webcam" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -129,7 +129,7 @@
         <canvas id="canvas" class="hidden"></canvas>
     </main>
 
-    <!-- Режимы (приподняты выше) -->
+    <!-- Режимы -->
     <div class="w-full flex justify-between gap-2 overflow-x-auto py-1 px-1 no-scrollbar z-10">
         <button onclick="setMode('auto')" id="mode-auto" class="mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white shrink-0 shadow-lg border border-white/30">✨ Авто</button>
         <button onclick="setMode('food')" id="mode-food" class="mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold liquid-glass-btn text-gray-200 shrink-0">🥗 Калории</button>
@@ -138,7 +138,7 @@
         <button onclick="setMode('health')" id="mode-health" class="mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold liquid-glass-btn text-gray-200 shrink-0">🩺 Здоровье</button>
     </div>
 
-    <!-- Кнопка съемки (поднята ближе к режимам) -->
+    <!-- Кнопка съемки -->
     <div class="w-full flex justify-center items-center my-1 z-10">
         <button onclick="captureAndAnalyze()" class="w-20 h-20 rounded-full p-1 flex items-center justify-center liquid-glass-btn shadow-2xl active:scale-90 transition">
             <div class="w-full h-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl shadow-inner border border-white/40">
@@ -154,13 +154,11 @@
                 <h3 class="text-xl font-extrabold text-blue-300 flex items-center gap-3">
                     <i class="fa-solid fa-sparkles"></i> Результат анализа
                 </h3>
-                <!-- Кнопка закрытия (крестик) -->
                 <button id="modalCloseBtn" onclick="closeModal('resultModal')" class="w-10 h-10 rounded-full liquid-glass-btn flex items-center justify-center text-gray-200 text-lg">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             <div id="resultContent" class="text-lg leading-relaxed text-gray-100 whitespace-pre-line font-medium"></div>
-            <!-- Кнопка Готово -->
             <button id="modalActionBtn" onclick="closeModal('resultModal')" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold text-lg shadow-xl transition mt-2 border border-white/30">Готово</button>
         </div>
     </div>
@@ -190,10 +188,17 @@
 
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } 
+                });
                 video.srcObject = stream;
+                video.setAttribute('playsinline', 'true');
+                video.setAttribute('autoplay', 'true');
+                video.setAttribute('muted', 'true');
+                await video.play();
             } catch (err) {
-                alert("Ошибка доступа к камере.");
+                console.error("Camera access error:", err);
+                alert("Ошибка доступа к камере. Убедитесь, что сайт открыт по HTTPS и вы дали разрешение на использование камеры.");
             }
         }
 
@@ -260,7 +265,7 @@
             const base64Image = canvas.toDataURL('image/jpeg', 0.7);
             const base64Data = base64Image.split(',')[1];
 
-            // СКРЫВАЕМ крестик и кнопку "Готово" на время анализа
+            // Скрываем крестик и кнопку "Готово" на время анализа
             document.getElementById('modalCloseBtn').classList.add('hidden');
             document.getElementById('modalActionBtn').classList.add('hidden');
 
@@ -268,9 +273,9 @@
             document.getElementById('resultModal').classList.remove('hidden');
             document.getElementById('resultContent').innerText = "🔍 SightAI анализирует снимок...";
 
+            // Актуальные стабильные модели Google
             const candidateModels = [
-                "gemini-3.8-flash",
-                "gemini-2.5-flash",
+                "gemini-2.0-flash",
                 "gemini-1.5-flash"
             ];
 
@@ -316,13 +321,13 @@
                         break;
                     }
                 } catch (e) {
-                    // Игнорируем и пробуем следующую модель
+                    // Пробуем следующую модель
                 }
             }
 
             document.getElementById('scannerOverlay').classList.add('hidden');
 
-            // ВОЗВРАЩАЕМ крестик и кнопку "Готово" после завершения анализа
+            // Возвращаем крестик и кнопку "Готово"
             document.getElementById('modalCloseBtn').classList.remove('hidden');
             document.getElementById('modalActionBtn').classList.remove('hidden');
 
