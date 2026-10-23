@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SightAI — Умная Камера (v2.6)</title>
+    <title>SightAI — Умная Камера (v2.7)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -12,6 +12,8 @@
             color: #f3f4f6;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             overflow-x: hidden;
+            height: 100vh;
+            height: 100dvh;
         }
 
         /* Жидкий анимированный фон */
@@ -49,12 +51,17 @@
             transform: scale(0.96);
         }
 
-        /* Полное отключение элементов плеера */
-        video::-webkit-media-controls {
-            display: none !important;
+        /* Полное блокирование элементов плеера и касаний видео в iOS */
+        video {
+            pointer-events: none !important;
         }
-        video::-webkit-media-controls-enclosure {
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-panel,
+        video::-webkit-media-controls-play-button,
+        video::-webkit-media-controls-start-playback-button {
             display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
 
         .scan-line {
@@ -73,70 +80,68 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between p-4 max-w-md mx-auto relative">
+<body class="flex flex-col items-center justify-between p-3 max-w-md mx-auto relative">
 
     <div class="liquid-bg"></div>
 
-    <!-- Шапка -->
-    <header class="w-full flex justify-between items-center py-3 z-10">
-        <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-xl shadow-xl border border-white/20">
+    <!-- Шапка (уменьшенный логотип и отступы) -->
+    <header class="w-full flex justify-between items-center py-1.5 z-10">
+        <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-base shadow-lg border border-white/20">
                 <i class="fa-solid fa-eye text-white"></i>
             </div>
-            <span class="font-extrabold text-2xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300">SightAI</span>
+            <span class="font-extrabold text-xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300">SightAI</span>
         </div>
-        <div class="flex items-center gap-2">
-            <!-- Версия приложения v2.6 -->
-            <span class="text-xs font-bold text-blue-400 bg-blue-500/10 border border-blue-400/30 px-2.5 py-1 rounded-full">v2.6</span>
-            <button onclick="openHistory()" class="liquid-glass-btn px-3.5 py-2.5 rounded-2xl text-base font-semibold text-blue-300 flex items-center gap-1.5">
+        <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-bold text-blue-400 bg-blue-500/10 border border-blue-400/30 px-2 py-0.5 rounded-full">v2.7</span>
+            <button onclick="openHistory()" class="liquid-glass-btn px-3 py-2 rounded-xl text-sm font-semibold text-blue-300 flex items-center gap-1">
                 <i class="fa-solid fa-clock-rotate-left"></i> История
             </button>
-            <button onclick="promptApiKey()" class="liquid-glass-btn px-3 py-2.5 rounded-2xl text-base font-semibold text-yellow-300" title="API Ключ">
+            <button onclick="promptApiKey()" class="liquid-glass-btn px-2.5 py-2 rounded-xl text-sm font-semibold text-yellow-300" title="API Ключ">
                 <i class="fa-solid fa-key"></i>
             </button>
-            <!-- Кнопка принудительной синхронизации / обновления -->
-            <button onclick="forceSync()" class="liquid-glass-btn px-3 py-2.5 rounded-2xl text-base font-semibold text-emerald-300" title="Синхронизация / Обновление">
+            <button onclick="forceSync()" class="liquid-glass-btn px-2.5 py-2 rounded-xl text-sm font-semibold text-emerald-300" title="Синхронизация">
                 <i class="fa-solid fa-rotate"></i>
             </button>
         </div>
     </header>
 
-    <!-- Видеоискатель -->
-    <main class="w-full relative flex-1 my-3 flex flex-col justify-center items-center">
-        <div class="w-full h-[450px] rounded-3xl overflow-hidden relative liquid-glass shadow-2xl flex items-center justify-center">
-            <video id="webcam" autoplay playsinline muted class="w-full h-full object-cover pointer-events-none"></video>
+    <!-- Видеоискатель (оптимизированная высота для баланса экрана) -->
+    <main class="w-full relative my-1 flex flex-col justify-center items-center">
+        <div class="w-full h-[390px] rounded-3xl overflow-hidden relative liquid-glass shadow-2xl flex items-center justify-center">
+            <video id="webcam" autoplay playsinline muted class="w-full h-full object-cover"></video>
             
             <div id="scannerOverlay" class="hidden absolute inset-0 bg-black/40 backdrop-blur-sm">
                 <div class="scan-line"></div>
             </div>
 
-            <div class="absolute inset-8 border-2 border-white/30 rounded-3xl pointer-events-none flex justify-between flex-col p-3">
+            <div class="absolute inset-6 border-2 border-white/30 rounded-2xl pointer-events-none flex justify-between flex-col p-2">
                 <div class="flex justify-between">
-                    <div class="w-6 h-6 border-t-4 border-l-4 border-blue-400 rounded-tl-lg"></div>
-                    <div class="w-6 h-6 border-t-4 border-r-4 border-blue-400 rounded-tr-lg"></div>
+                    <div class="w-5 h-5 border-t-4 border-l-4 border-blue-400 rounded-tl-lg"></div>
+                    <div class="w-5 h-5 border-t-4 border-r-4 border-blue-400 rounded-tr-lg"></div>
                 </div>
                 <div class="flex justify-between">
-                    <div class="w-6 h-6 border-b-4 border-l-4 border-blue-400 rounded-bl-lg"></div>
-                    <div class="w-6 h-6 border-b-4 border-r-4 border-blue-400 rounded-br-lg"></div>
+                    <div class="w-5 h-5 border-b-4 border-l-4 border-blue-400 rounded-bl-lg"></div>
+                    <div class="w-5 h-5 border-b-4 border-r-4 border-blue-400 rounded-br-lg"></div>
                 </div>
             </div>
         </div>
         <canvas id="canvas" class="hidden"></canvas>
     </main>
 
-    <!-- Режимы -->
-    <div class="w-full flex justify-between gap-2.5 overflow-x-auto py-3 px-1 no-scrollbar z-10">
-        <button onclick="setMode('auto')" id="mode-auto" class="mode-btn px-4 py-3 rounded-2xl text-base font-bold bg-blue-600 text-white shrink-0 shadow-lg border border-white/30">✨ Авто</button>
-        <button onclick="setMode('food')" id="mode-food" class="mode-btn px-4 py-3 rounded-2xl text-base font-bold liquid-glass-btn text-gray-200 shrink-0">🥗 Калории</button>
-        <button onclick="setMode('history')" id="mode-history" class="mode-btn px-4 py-3 rounded-2xl text-base font-bold liquid-glass-btn text-gray-200 shrink-0">🏛️ История</button>
-        <button onclick="setMode('math')" id="mode-math" class="mode-btn px-4 py-3 rounded-2xl text-base font-bold liquid-glass-btn text-gray-200 shrink-0">📐 Формулы</button>
-        <button onclick="setMode('health')" id="mode-health" class="mode-btn px-4 py-3 rounded-2xl text-base font-bold liquid-glass-btn text-gray-200 shrink-0">🩺 Здоровье</button>
+    <!-- Режимы (приподняты выше) -->
+    <div class="w-full flex justify-between gap-2 overflow-x-auto py-1 px-1 no-scrollbar z-10">
+        <button onclick="setMode('auto')" id="mode-auto" class="mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white shrink-0 shadow-lg border border-white/30">✨ Авто</button>
+        <button onclick="setMode('food')" id="mode-food" class="mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold liquid-glass-btn text-gray-200 shrink-0">🥗 Калории</button>
+        <button onclick="setMode('history')" id="mode-history" class="mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold liquid-glass-btn text-gray-200 shrink-0">🏛️ История</button>
+        <button onclick="setMode('math')" id="mode-math" class="mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold liquid-glass-btn text-gray-200 shrink-0">📐 Формулы</button>
+        <button onclick="setMode('health')" id="mode-health" class="mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold liquid-glass-btn text-gray-200 shrink-0">🩺 Здоровье</button>
     </div>
 
-    <!-- Кнопка съемки -->
-    <div class="w-full flex justify-center items-center my-4 z-10">
-        <button onclick="captureAndAnalyze()" class="w-24 h-24 rounded-full p-1.5 flex items-center justify-center liquid-glass-btn shadow-2xl active:scale-90 transition">
-            <div class="w-full h-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl shadow-inner border border-white/40">
+    <!-- Кнопка съемки (поднята ближе к режимам) -->
+    <div class="w-full flex justify-center items-center my-1 z-10">
+        <button onclick="captureAndAnalyze()" class="w-20 h-20 rounded-full p-1 flex items-center justify-center liquid-glass-btn shadow-2xl active:scale-90 transition">
+            <div class="w-full h-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl shadow-inner border border-white/40">
                 <i class="fa-solid fa-camera"></i>
             </div>
         </button>
@@ -149,12 +154,14 @@
                 <h3 class="text-xl font-extrabold text-blue-300 flex items-center gap-3">
                     <i class="fa-solid fa-sparkles"></i> Результат анализа
                 </h3>
-                <button onclick="closeModal('resultModal')" class="w-10 h-10 rounded-full liquid-glass-btn flex items-center justify-center text-gray-200 text-lg">
+                <!-- Кнопка закрытия (крестик) -->
+                <button id="modalCloseBtn" onclick="closeModal('resultModal')" class="w-10 h-10 rounded-full liquid-glass-btn flex items-center justify-center text-gray-200 text-lg">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             <div id="resultContent" class="text-lg leading-relaxed text-gray-100 whitespace-pre-line font-medium"></div>
-            <button onclick="closeModal('resultModal')" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold text-lg shadow-xl transition mt-2 border border-white/30">Готово</button>
+            <!-- Кнопка Готово -->
+            <button id="modalActionBtn" onclick="closeModal('resultModal')" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold text-lg shadow-xl transition mt-2 border border-white/30">Готово</button>
         </div>
     </div>
 
@@ -193,9 +200,9 @@
         function setMode(mode) {
             currentMode = mode;
             document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.className = 'mode-btn px-4 py-3 rounded-2xl text-base font-bold liquid-glass-btn text-gray-200 shrink-0';
+                btn.className = 'mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold liquid-glass-btn text-gray-200 shrink-0';
             });
-            document.getElementById(`mode-${mode}`).className = 'mode-btn px-4 py-3 rounded-2xl text-base font-bold bg-blue-600 text-white shrink-0 shadow-lg border border-white/30';
+            document.getElementById(`mode-${mode}`).className = 'mode-btn px-3.5 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white shrink-0 shadow-lg border border-white/30';
         }
 
         function promptApiKey() {
@@ -206,18 +213,13 @@
             }
         }
 
-        // Функция принудительной синхронизации и сброса кэша
         function forceSync() {
-            if (confirm("Выполнить синхронизацию и обновить приложение до последней версии?")) {
-                // Очистка возможных сервис-воркеров
+            if (confirm("Выполнить синхронизацию и обновить приложение?")) {
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.getRegistrations().then(registrations => {
-                        for(let registration of registrations) {
-                            registration.unregister();
-                        }
+                        for(let registration of registrations) { registration.unregister(); }
                     });
                 }
-                // Перезагрузка с временной меткой, чтобы обойти кэш GitHub Pages
                 const cleanUrl = window.location.href.split('?')[0];
                 window.location.replace(cleanUrl + '?v=' + Date.now());
             }
@@ -258,6 +260,10 @@
             const base64Image = canvas.toDataURL('image/jpeg', 0.7);
             const base64Data = base64Image.split(',')[1];
 
+            // СКРЫВАЕМ крестик и кнопку "Готово" на время анализа
+            document.getElementById('modalCloseBtn').classList.add('hidden');
+            document.getElementById('modalActionBtn').classList.add('hidden');
+
             document.getElementById('scannerOverlay').classList.remove('hidden');
             document.getElementById('resultModal').classList.remove('hidden');
             document.getElementById('resultContent').innerText = "🔍 SightAI анализирует снимок...";
@@ -269,7 +275,6 @@
             ];
 
             let success = false;
-            let lastError = "";
 
             for (const model of candidateModels) {
                 try {
@@ -309,18 +314,20 @@
 
                         success = true;
                         break;
-                    } else if (data.error) {
-                        lastError = `[${model}]: ${data.error.message}`;
                     }
                 } catch (e) {
-                    lastError = e.message;
+                    // Игнорируем и пробуем следующую модель
                 }
             }
 
             document.getElementById('scannerOverlay').classList.add('hidden');
 
+            // ВОЗВРАЩАЕМ крестик и кнопку "Готово" после завершения анализа
+            document.getElementById('modalCloseBtn').classList.remove('hidden');
+            document.getElementById('modalActionBtn').classList.remove('hidden');
+
             if (!success) {
-                document.getElementById('resultContent').innerText = `Не удалось получить ответ.\n\nОшибка:\n${lastError}\n\nПроверьте правильность API ключа.`;
+                document.getElementById('resultContent').innerText = "Не удалось произвести анализ, повторите попытку!";
             }
         }
 
