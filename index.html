@@ -14,7 +14,7 @@
             overflow-x: hidden;
         }
 
-        /* Жидкий анимированный фон для эффекта переливов стекла */
+        /* Жидкий анимированный фон */
         .liquid-bg {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -69,7 +69,7 @@
 
     <div class="liquid-bg"></div>
 
-    <!-- Шапка (Шрифты увеличены вдвое) -->
+    <!-- Шапка -->
     <header class="w-full flex justify-between items-center py-3 z-10">
         <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-xl shadow-xl border border-white/20">
@@ -110,7 +110,7 @@
         <canvas id="canvas" class="hidden"></canvas>
     </main>
 
-    <!-- Режимы (Шрифты и отступы увеличены) -->
+    <!-- Режимы -->
     <div class="w-full flex justify-between gap-2.5 overflow-x-auto py-3 px-1 no-scrollbar z-10">
         <button onclick="setMode('auto')" id="mode-auto" class="mode-btn px-4 py-3 rounded-2xl text-base font-bold bg-blue-600 text-white shrink-0 shadow-lg border border-white/30">✨ Авто</button>
         <button onclick="setMode('food')" id="mode-food" class="mode-btn px-4 py-3 rounded-2xl text-base font-bold liquid-glass-btn text-gray-200 shrink-0">🥗 Калории</button>
@@ -216,12 +216,13 @@
 
             document.getElementById('scannerOverlay').classList.remove('hidden');
             document.getElementById('resultModal').classList.remove('hidden');
-            document.getElementById('resultContent').innerText = "🔍 SightAI подбирает доступную модель и анализирует...";
+            document.getElementById('resultContent').innerText = "🔍 SightAI анализирует снимок...";
 
+            // Актуальный список моделей Google Gemini
             const candidateModels = [
-                "gemini-1.5-flash-latest",
-                "gemini-1.5-flash",
-                "gemini-2.0-flash"
+                "gemini-3.8-flash",
+                "gemini-2.5-flash",
+                "gemini-1.5-flash"
             ];
 
             let success = false;
