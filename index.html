@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SightAI — Умная Камера (v2.4)</title>
+    <title>SightAI — Умная Камера (v2.6)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -49,7 +49,7 @@
             transform: scale(0.96);
         }
 
-        /* Убираем любые стандартные элементы системного плеера */
+        /* Полное отключение элементов плеера */
         video::-webkit-media-controls {
             display: none !important;
         }
@@ -86,18 +86,22 @@
             <span class="font-extrabold text-2xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300">SightAI</span>
         </div>
         <div class="flex items-center gap-2">
-            <!-- Версия приложения -->
-            <span class="text-xs font-bold text-blue-400 bg-blue-500/10 border border-blue-400/30 px-2.5 py-1 rounded-full">v2.4</span>
+            <!-- Версия приложения v2.6 -->
+            <span class="text-xs font-bold text-blue-400 bg-blue-500/10 border border-blue-400/30 px-2.5 py-1 rounded-full">v2.6</span>
             <button onclick="openHistory()" class="liquid-glass-btn px-3.5 py-2.5 rounded-2xl text-base font-semibold text-blue-300 flex items-center gap-1.5">
                 <i class="fa-solid fa-clock-rotate-left"></i> История
             </button>
-            <button onclick="promptApiKey()" class="liquid-glass-btn px-3.5 py-2.5 rounded-2xl text-base font-semibold text-yellow-300">
+            <button onclick="promptApiKey()" class="liquid-glass-btn px-3 py-2.5 rounded-2xl text-base font-semibold text-yellow-300" title="API Ключ">
                 <i class="fa-solid fa-key"></i>
+            </button>
+            <!-- Кнопка принудительной синхронизации / обновления -->
+            <button onclick="forceSync()" class="liquid-glass-btn px-3 py-2.5 rounded-2xl text-base font-semibold text-emerald-300" title="Синхронизация / Обновление">
+                <i class="fa-solid fa-rotate"></i>
             </button>
         </div>
     </header>
 
-    <!-- Видеоискатель (без кнопок play/pause) -->
+    <!-- Видеоискатель -->
     <main class="w-full relative flex-1 my-3 flex flex-col justify-center items-center">
         <div class="w-full h-[450px] rounded-3xl overflow-hidden relative liquid-glass shadow-2xl flex items-center justify-center">
             <video id="webcam" autoplay playsinline muted class="w-full h-full object-cover pointer-events-none"></video>
@@ -202,6 +206,23 @@
             }
         }
 
+        // Функция принудительной синхронизации и сброса кэша
+        function forceSync() {
+            if (confirm("Выполнить синхронизацию и обновить приложение до последней версии?")) {
+                // Очистка возможных сервис-воркеров
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        for(let registration of registrations) {
+                            registration.unregister();
+                        }
+                    });
+                }
+                // Перезагрузка с временной меткой, чтобы обойти кэш GitHub Pages
+                const cleanUrl = window.location.href.split('?')[0];
+                window.location.replace(cleanUrl + '?v=' + Date.now());
+            }
+        }
+
         const prompts = {
             auto: "Определи, что находится на изображении. Дай исчерпывающее и структурированное описание на русском языке.",
             food: "Определи еду на изображении. Рассчитай примерный вес, калорийность (Ккал) и БЖУ. На русском языке.",
@@ -239,13 +260,12 @@
 
             document.getElementById('scannerOverlay').classList.remove('hidden');
             document.getElementById('resultModal').classList.remove('hidden');
-            document.getElementById('resultContent').innerText = "🔍 SightAI подбирает подходящую модель и анализирует...";
+            document.getElementById('resultContent').innerText = "🔍 SightAI анализирует снимок...";
 
-            // Цикл автоподбора моделей
             const candidateModels = [
                 "gemini-3.8-flash",
                 "gemini-2.5-flash",
-                "gemini-1.5-flash-latest"
+                "gemini-1.5-flash"
             ];
 
             let success = false;
