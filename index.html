@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SightAI — Умная Камера</title>
+    <title>SightAI — Умная Камера (v2.4)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -14,6 +14,7 @@
             overflow-x: hidden;
         }
 
+        /* Жидкий анимированный фон */
         .liquid-bg {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -23,6 +24,7 @@
                         radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 1) 100%);
         }
 
+        /* Эффект жидкого стекла (Liquid Glass) */
         .liquid-glass {
             background: rgba(17, 24, 39, 0.65);
             backdrop-filter: blur(25px);
@@ -45,6 +47,14 @@
 
         .liquid-glass-btn:active {
             transform: scale(0.96);
+        }
+
+        /* Убираем любые стандартные элементы системного плеера */
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+        video::-webkit-media-controls-enclosure {
+            display: none !important;
         }
 
         .scan-line {
@@ -75,20 +85,22 @@
             </div>
             <span class="font-extrabold text-2xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300">SightAI</span>
         </div>
-        <div class="flex gap-2.5">
-            <button onclick="openHistory()" class="liquid-glass-btn px-4 py-2.5 rounded-2xl text-base font-semibold text-blue-300 flex items-center gap-2">
+        <div class="flex items-center gap-2">
+            <!-- Версия приложения -->
+            <span class="text-xs font-bold text-blue-400 bg-blue-500/10 border border-blue-400/30 px-2.5 py-1 rounded-full">v2.4</span>
+            <button onclick="openHistory()" class="liquid-glass-btn px-3.5 py-2.5 rounded-2xl text-base font-semibold text-blue-300 flex items-center gap-1.5">
                 <i class="fa-solid fa-clock-rotate-left"></i> История
             </button>
-            <button onclick="promptApiKey()" class="liquid-glass-btn px-4 py-2.5 rounded-2xl text-base font-semibold text-yellow-300">
+            <button onclick="promptApiKey()" class="liquid-glass-btn px-3.5 py-2.5 rounded-2xl text-base font-semibold text-yellow-300">
                 <i class="fa-solid fa-key"></i>
             </button>
         </div>
     </header>
 
-    <!-- Видеоискатель -->
+    <!-- Видеоискатель (без кнопок play/pause) -->
     <main class="w-full relative flex-1 my-3 flex flex-col justify-center items-center">
         <div class="w-full h-[450px] rounded-3xl overflow-hidden relative liquid-glass shadow-2xl flex items-center justify-center">
-            <video id="webcam" autoplay playsinline class="w-full h-full object-cover"></video>
+            <video id="webcam" autoplay playsinline muted class="w-full h-full object-cover pointer-events-none"></video>
             
             <div id="scannerOverlay" class="hidden absolute inset-0 bg-black/40 backdrop-blur-sm">
                 <div class="scan-line"></div>
@@ -204,7 +216,6 @@
                 if (!apiKey) return;
             }
 
-            // Оптимизация размера изображения (сжатие для быстрой передачи)
             const MAX_SIZE = 800;
             let w = video.videoWidth || 640;
             let h = video.videoHeight || 480;
@@ -228,56 +239,68 @@
 
             document.getElementById('scannerOverlay').classList.remove('hidden');
             document.getElementById('resultModal').classList.remove('hidden');
-            document.getElementById('resultContent').innerText = "🔍 SightAI мгновенно анализирует снимок...";
+            document.getElementById('resultContent').innerText = "🔍 SightAI подбирает подходящую модель и анализирует...";
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // Таймаут 15 секунд
+            // Цикл автоподбора моделей
+            const candidateModels = [
+                "gemini-3.8-flash",
+                "gemini-2.5-flash",
+                "gemini-1.5-flash-latest"
+            ];
 
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: prompts[currentMode] },
-                                { inline_data: { mime_type: "image/jpeg", data: base64Data } }
-                            ]
-                        }]
-                    }),
-                    signal: controller.signal
-                });
+            let success = false;
+            let lastError = "";
 
-                clearTimeout(timeoutId);
-                const data = await response.json();
-                document.getElementById('scannerOverlay').classList.add('hidden');
+            for (const model of candidateModels) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-                if (response.ok && data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-                    const resultText = data.candidates[0].content.parts[0].text;
-                    document.getElementById('resultContent').innerText = resultText;
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: prompts[currentMode] },
+                                    { inline_data: { mime_type: "image/jpeg", data: base64Data } }
+                                ]
+                            }]
+                        }),
+                        signal: controller.signal
+                    });
 
-                    const newItem = {
-                        image: base64Image,
-                        mode: currentMode,
-                        text: resultText,
-                        date: new Date().toLocaleString()
-                    };
-                    historyData.unshift(newItem);
-                    if (historyData.length > 20) historyData.pop();
-                    localStorage.setItem('omni_history', JSON.stringify(historyData));
-                } else if (data.error) {
-                    document.getElementById('resultContent').innerText = `Ошибка API: ${data.error.message}`;
-                } else {
-                    document.getElementById('resultContent').innerText = "Не удалось распознать объект. Попробуйте снова.";
+                    clearTimeout(timeoutId);
+                    const data = await response.json();
+
+                    if (response.ok && data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                        const resultText = data.candidates[0].content.parts[0].text;
+                        document.getElementById('resultContent').innerText = resultText;
+
+                        const newItem = {
+                            image: base64Image,
+                            mode: currentMode,
+                            text: resultText,
+                            date: new Date().toLocaleString()
+                        };
+                        historyData.unshift(newItem);
+                        if (historyData.length > 20) historyData.pop();
+                        localStorage.setItem('omni_history', JSON.stringify(historyData));
+
+                        success = true;
+                        break;
+                    } else if (data.error) {
+                        lastError = `[${model}]: ${data.error.message}`;
+                    }
+                } catch (e) {
+                    lastError = e.message;
                 }
-            } catch (err) {
-                clearTimeout(timeoutId);
-                document.getElementById('scannerOverlay').classList.add('hidden');
-                if (err.name === 'AbortError') {
-                    document.getElementById('resultContent').innerText = "Превышено время ожидания. Проверьте интернет-соединение или VPN.";
-                } else {
-                    document.getElementById('resultContent').innerText = "Ошибка сети или блокировка запроса.";
-                }
+            }
+
+            document.getElementById('scannerOverlay').classList.add('hidden');
+
+            if (!success) {
+                document.getElementById('resultContent').innerText = `Не удалось получить ответ.\n\nОшибка:\n${lastError}\n\nПроверьте правильность API ключа.`;
             }
         }
 
